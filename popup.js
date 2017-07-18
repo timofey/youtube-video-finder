@@ -2,12 +2,15 @@
 function find() {
 
     var getWayBack = function(url) {
-        let apiUrl = 'https://archive.org/wayback/available?timestamp=20070101&url=' + encodeURIComponent(url);
+        let apiUrl = 'https://web.archive.org/cdx/search/cdx?url=' + encodeURIComponent(url);
         let xhr = new XMLHttpRequest();
         xhr.open('GET', apiUrl, false);
         xhr.send(null);
-        let response = JSON.parse(xhr.responseText);
-        let wayBackUrl = response.archived_snapshots.closest.url.replace(/^http:/, 'https:');
+        var response = xhr.responseText;
+        response = response.split('\n')[0].split(' ');
+        let timestamp = response[1];
+        let archivedUrl = response[2];
+        let wayBackUrl = 'https://web.archive.org/web/' + timestamp + '/' + archivedUrl.replace(/^http:/, 'https:');
 
         xhr.open('GET', wayBackUrl, false);
         xhr.send(null);
