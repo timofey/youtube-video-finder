@@ -1,5 +1,4 @@
-
-function find() {
+let find = function() {
 
     var getWayBack = function(url) {
         let apiUrl = 'https://web.archive.org/cdx/search/cdx?url=' + encodeURIComponent(url);
@@ -14,7 +13,6 @@ function find() {
 
         xhr.open('GET', wayBackUrl, false);
         xhr.send(null);
-        console.log(xhr);
         let regex = /<span[^>]+id="eow-title"[^>]+>([^<]+)<\/span>/;
         let videoTitle = xhr.responseText.match(regex)[1].trim();
         return videoTitle;
@@ -29,17 +27,39 @@ function find() {
         window.location.href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(videoTitle);
     }
 
-}
+};
 
-function wrapper(btn) {
-    btn.disabled = 'disabled';
-    btn.innerHTML = 'Loading...';
+let wrapper = function() {
     chrome.tabs.executeScript({code:'(' + find.toString() + ')();'});
-}
+};
 
-document.getElementById('finder-button').addEventListener('click', function(e) {
-    wrapper(e.target);
+let activateCallback = function(tabId) {
+    let tab = chrome.tabs.get(tabId, function(tab) {
+        let url = tab.url;
+        if (url.match(/^https?:\/\/\w*\.?youtube\.com\/?.*$/)) {
+          chrome.browserAction.setIcon({path: "icon.png"}); 
+          chrome.storage.local.set({is_active: true});
+        } else {
+          chrome.browserAction.setIcon({path: "icon_disabled.png"});
+          chrome.storage.local.set({is_active: false});
+        }
+    });
+};
+
+chrome.tabs.onActivated.addListener(function(activeInfo) {
+    let tabId = activeInfo.tabId;
+    activateCallback(tabId);
 });
 
-console.log(find.toString());
+chrome.tabs.onUpdated.addListener(function(tabId) {
+    activateCallback(tabId);
+});
+
+chrome.browserAction.onClicked.addListener(function(tab) {
+    chrome.storage.local.get('is_active', function(items) {
+        if (items['is_active'] === true) {
+            wrapper();
+        }
+    });
+});
 
