@@ -1,9 +1,10 @@
 {
   "manifest_version": 2,
 
-  "name": "YouTube Fixer",
+  "name": "YouTube Video Finder",
   "description": "Redirects you to search page if video is unavailable. Search query contains keywords from the video you were trying to reach.",
   "version": "0.1",
+  "author": "Timofey Klyubin",
 
   "browser_action": {
     "default_icon": "icon.png"
