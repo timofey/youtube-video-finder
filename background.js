@@ -1,3 +1,28 @@
+/**
+ * MIT License
+ *
+ * Copyright (c) 2017 Timofey Klyubin
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ **/
+
+
 let find = function() {
 
     var getWayBack = function(url) {
@@ -39,10 +64,29 @@ let find = function() {
 
 };
 
-let wrapper = function() {
+let setIcon = function(path, tabId) {
+    chrome.windows.getLastFocused(null, function(window) {
+        chrome.tabs.getSelected(function(tab) {
+            chrome.browserAction.setIcon({
+                'path': path
+            });
+        });
+    });
+
+    chrome.tabs.query({}, function(tabs) {
+        for (var i = 0; i < tabs.length; i++) {
+            chrome.browserAction.setIcon({
+                path: (tabs[i].id == tabId ? path : 'icon_disabled.png'), 
+                tabId: tabs[i].id
+            });
+        }
+    });
+};
+
+let wrapper = function(tabId) {
     chrome.tabs.executeScript({code:'(' + find.toString() + ')();'}, function(r) {
         if (r == 'no') {
-            chrome.browserAction.setIcon({path: "icon_sad.png"}); 
+            setIcon("icon_sad.png", tabId);
         }
     });
 };
@@ -52,15 +96,15 @@ let activateCallback = function(tabId) {
         let url = tab.url;
         if (url.match(/^https?:\/\/\w*\.?youtube\.com\/?.*$/)) {
             chrome.storage.local.get(['is_waiting'], function(items) {
-                if (items['is_waiting'] === true) {
-                    chrome.browserAction.setIcon({path: "icon_waiting.png"}); 
+                if (items['is_waiting'] == true) {
+                    setIcon("icon_waiting.png", tabId);
                 } else {
-                    chrome.browserAction.setIcon({path: "icon.png"}); 
+                    setIcon("icon.png", tabId);
                 }
             });
             chrome.storage.local.set({is_active: true});
         } else {
-            chrome.browserAction.setIcon({path: "icon_disabled.png"});
+            setIcon("icon_disabled.png", tabId);
             chrome.storage.local.set({is_active: false});
         }
     });
@@ -76,14 +120,15 @@ chrome.tabs.onUpdated.addListener(function(tabId) {
 });
 
 chrome.browserAction.onClicked.addListener(function(tab) {
+    let tabId = tab.id;
     chrome.storage.local.get(['is_active', 'is_waiting'], function(items) {
         if (items['is_active'] === true) {
             if (items['is_waiting'] !== true) {
-                chrome.browserAction.setIcon({path: "icon_waiting.png"}); 
+                setIcon("icon_waiting.png", tabId);
                 chrome.storage.local.set({is_waiting: true});
-                wrapper();
+                wrapper(tabId);
                 chrome.storage.local.set({is_waiting: false});
-                chrome.browserAction.setIcon({path: "icon.png"}); 
+                setIcon("icon.png", tabId);
             }
         }
     });
